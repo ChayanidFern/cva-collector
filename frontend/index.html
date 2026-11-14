@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CVA Data Collector</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="setup-page">
+  <div class="setup-card">
+    <div class="setup-logo">🦴</div>
+    <div class="setup-title">CVA Data Collector</div>
+    <div class="setup-sub">ระบบเก็บข้อมูลท่านั่งสำหรับ Text Neck Syndrome<br>กรอกข้อมูลให้ครบก่อนเริ่มบันทึก</div>
+
+    <div class="form-section">
+      <div class="form-row">
+        <div>
+          <label class="form-label">รหัส Participant</label>
+          <input class="form-input" id="inp-pid" placeholder="เช่น P001" autocomplete="off">
+        </div>
+        <div>
+          <label class="form-label">ชื่อ-นามสกุล</label>
+          <input class="form-input" id="inp-name" placeholder="ชื่อผู้ร่วมวิจัย" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">ผู้วิจัย (Rater)</label>
+      <input class="form-input" id="inp-rater" placeholder="ชื่อผู้ที่ดูแลการบันทึก" autocomplete="off">
+    </div>
+
+    <div class="form-section">
+      <label class="form-label">หมายเหตุ (ถ้ามี)</label>
+      <input class="form-input" id="inp-note" placeholder="เช่น สวมแว่น, แสงน้อย" autocomplete="off">
+    </div>
+
+    <div class="protocol-preview">
+      <div class="protocol-preview-title">Protocol วันนี้ — รวม ~35 นาที</div>
+      <div class="protocol-steps" id="protocol-list"></div>
+    </div>
+
+    <div id="api-status" style="font-size:12px;color:var(--tx3);margin-top:12px;text-align:center">⏳ ตรวจสอบ Backend...</div>
+
+    <p id="form-error" style="color:var(--rfg);font-size:12px;margin-top:8px;display:none">กรุณากรอกข้อมูลให้ครบ</p>
+    <button class="btn-start" id="btn-start">▶ เริ่มบันทึก</button>
+
+    <div style="margin-top:16px;text-align:center">
+      <a href="sessions.html" style="font-size:12px;color:var(--bfg);text-decoration:none">🗂 ดูประวัติทั้งหมด →</a>
+    </div>
+  </div>
+</div>
+
+<script src="data/protocol.js"></script>
+<script src="js/api.js"></script>
+<script>
+// Render protocol preview
+document.addEventListener('DOMContentLoaded', async () => {
+  const list = document.getElementById('protocol-list');
+  PROTOCOL.forEach(step => {
+    const mins = step.durationMs / 60000;
+    const durStr = mins >= 1 ? `${mins} นาที` : `${step.durationMs / 1000} วินาที`;
+    list.innerHTML += `<div class="protocol-step">
+      <div class="step-dot" style="background:${step.color}"></div>
+      <span class="step-name">${step.label}</span>
+      <span class="step-dur">${durStr}</span>
+    </div>`;
+  });
+
+  // API check
+  const ok  = await apiHealthCheck();
+  const el  = document.getElementById('api-status');
+  el.textContent = ok ? '✅ Backend Online — ข้อมูลจะถูกบันทึกลง Server' : '⚠️ Backend Offline — จะ export เป็น CSV แทน';
+  el.style.color = ok ? 'var(--gfg)' : 'var(--afg)';
+
+  // Start button
+  document.getElementById('btn-start').addEventListener('click', () => {
+    const pid    = document.getElementById('inp-pid').value.trim();
+    const name   = document.getElementById('inp-name').value.trim();
+    const rater  = document.getElementById('inp-rater').value.trim();
+    const note   = document.getElementById('inp-note').value.trim();
+    const errEl  = document.getElementById('form-error');
+
+    if (!pid || !name || !rater) {
+      errEl.style.display = 'block'; return;
+    }
+    errEl.style.display = 'none';
+
+    sessionStorage.setItem('cva_info', JSON.stringify({ sessId: pid, pid, name, rater, note }));
+    window.location.href = 'session.html';
+  });
+
+  ['inp-pid','inp-name','inp-rater'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById('form-error').style.display = 'none';
+    });
+  });
+});
+</script>
+</body>
+</html>

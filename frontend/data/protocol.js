@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════
+   CVA Data Collector — Protocol Definition
+   แก้ไขขั้นตอนและเวลาที่นี่
+   ═══════════════════════════════════════════════════ */
+
+const PROTOCOL = [
+  {
+    id:       'baseline',
+    label:    'Label ปกติ — CVA ≥50°',
+    type:     'hold',          // 'hold' | 'activity' | 'rest'
+    cva:      '≥50°',
+    instruction: 'นั่งตรงตามธรรมชาติ ผ่อนคลาย ไม่ต้องทำท่าพิเศษ',
+    detail:   'เก็บ reference CVA ปกติก่อนเริ่ม session',
+    durationMs: 60000,         // 1 นาที
+    color:    '#3FB950',
+  },
+  {
+    id:       'rest-1',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนทำท่าถัดไป',
+    detail:   'เตรียมพร้อมสำหรับ Label CVA 40–49.9°',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'cva-40',
+    label:    'Label CVA 40–49.9°',
+    type:     'hold',
+    cva:      '40–49.9°',
+    instruction: 'ก้มคอเล็กน้อย ค้างท่าไว้นิ่งๆ',
+    detail:   'ก้มให้ได้ประมาณ CVA 40–49° แล้วค้างไว้',
+    durationMs: 60000,
+    color:    '#D29922',
+  },
+  {
+    id:       'rest-2',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนทำท่าถัดไป',
+    detail:   'เตรียมพร้อมสำหรับ Label CVA 30–39.9°',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'cva-30',
+    label:    'Label CVA 30–39.9°',
+    type:     'hold',
+    cva:      '30–39.9°',
+    instruction: 'ก้มคอปานกลาง ค้างท่าไว้นิ่งๆ',
+    detail:   'ก้มให้ได้ประมาณ CVA 30–39° แล้วค้างไว้',
+    durationMs: 60000,
+    color:    '#FB923C',
+  },
+  {
+    id:       'rest-3',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนทำท่าถัดไป',
+    detail:   'เตรียมพร้อมสำหรับ Label CVA ≤30°',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'cva-lt30',
+    label:    'Label CVA ≤30°',
+    type:     'hold',
+    cva:      '≤30°',
+    instruction: 'ก้มคอมากที่สุดที่ทำได้อย่างปลอดภัย',
+    detail:   'ก้มให้ได้ประมาณ CVA ≤30° แล้วค้างไว้ ไม่ฝืนถ้าเจ็บ',
+    durationMs: 60000,
+    color:    '#F85149',
+  },
+  {
+    id:       'rest-4',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนเริ่มกิจกรรม',
+    detail:   'เตรียมพร้อมสำหรับการเขียน/วาดรูป',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'writing',
+    label:    'เขียน / วาดรูป',
+    type:     'activity',
+    instruction: 'เขียนหรือวาดรูปบนกระดาษหรือไอแพดตามปกติ',
+    detail:   'ทำตามธรรมชาติ ไม่ต้องสนใจท่า',
+    durationMs: 180000,        // 3 นาที
+    color:    '#79C0FF',
+  },
+  {
+    id:       'rest-5',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนทำกิจกรรมถัดไป',
+    detail:   'เตรียมพร้อมสำหรับการใช้โน้ตบุ๊ค',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'notebook',
+    label:    'ใช้โน้ตบุ๊ค',
+    type:     'activity',
+    instruction: 'ใช้โน้ตบุ๊คตามปกติ ทำงานหรือเล่นเกมก็ได้',
+    detail:   'ทำตามธรรมชาติ ไม่ต้องสนใจท่า',
+    durationMs: 180000,
+    color:    '#79C0FF',
+  },
+  {
+    id:       'rest-6',
+    label:    'พัก',
+    type:     'rest',
+    instruction: 'พักก่อนเริ่มกิจกรรมอิสระ',
+    detail:   'เตรียมพร้อมสำหรับกิจกรรมอิสระ 10 นาที',
+    durationMs: 60000,
+    color:    '#8B949E',
+  },
+  {
+    id:       'free',
+    label:    'กิจกรรมอิสระ',
+    type:     'activity',
+    instruction: 'ทำอะไรก็ได้ตามต้องการ — ไอแพด โทรศัพท์ คอม หรืออื่นๆ',
+    detail:   'บันทึกพฤติกรรมธรรมชาติ ไม่มีข้อกำหนด',
+    durationMs: 600000,        // 10 นาที
+    color:    '#22D3EE',
+  },
+];

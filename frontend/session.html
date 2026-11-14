@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CVA Session</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="sess-page">
+
+  <!-- Header -->
+  <div class="sess-header">
+    <span class="sess-id" id="h-sess">—</span>
+    <span style="font-size:12px;color:var(--tx2)" id="h-name">—</span>
+    <span class="sess-clock" id="sess-clock">0:00</span>
+    <button class="btn-sm" id="btn-log">📋 ประวัติ</button>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+
+  <!-- Step dots -->
+  <div class="step-dots" id="step-dots"></div>
+
+  <!-- Main body -->
+  <div class="sess-body">
+    <div class="phase-badge" id="phase-badge" style="color:var(--gfg);border-color:var(--gfg)">—</div>
+    <div class="phase-type" id="phase-type">—</div>
+    <div class="phase-title" id="phase-title">—</div>
+    <div class="phase-detail" id="phase-detail">—</div>
+
+    <!-- Timer ring -->
+    <div class="timer-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle class="ring-bg"  cx="70" cy="70" r="60"/>
+        <circle class="ring-arc" id="ring-arc" cx="70" cy="70" r="60" stroke="#3FB950"/>
+      </svg>
+      <div class="timer-num" id="timer-num" style="color:#3FB950">—</div>
+    </div>
+
+    <!-- Next preview -->
+    <div class="next-preview" id="next-preview">—</div>
+
+    <!-- Prepare overlay -->
+    <div class="prep-overlay" id="prep-overlay">
+      <div class="prep-label">เตรียมพร้อม</div>
+      <div class="prep-count" id="prep-count">3</div>
+      <div class="prep-next" id="prep-next">—</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="sess-footer">
+    <button class="btn-ctrl pause" id="btn-pause" disabled>⏸ หยุดชั่วคราว</button>
+    <button class="btn-ctrl skip"  id="btn-skip"  disabled>⏭ ข้ามขั้นตอน</button>
+    <button class="btn-ctrl stop"  id="btn-stop"  disabled>⏹ หยุดบันทึก</button>
+    <button class="btn-ctrl export" id="btn-csv"  style="margin-left:auto">⬇ CSV</button>
+  </div>
+</div>
+
+<!-- Log drawer -->
+<div id="log-drawer" style="position:fixed;right:0;top:0;bottom:0;width:280px;background:var(--bg2);border-left:1px solid var(--bdr);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s;z-index:50">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bdr)">
+    <span style="font-size:12px;font-weight:600;color:var(--tx2)">Activity Log</span>
+    <button class="btn-sm" id="btn-close-log">✕</button>
+  </div>
+  <div id="log-body" style="flex:1;overflow-y:auto;padding:6px;font-size:11px">
+    <div style="text-align:center;color:var(--tx3);padding:16px">ยังไม่มีข้อมูล</div>
+  </div>
+  <div id="log-footer" style="font-size:11px;color:var(--tx2);padding:6px 14px;border-top:1px solid var(--bdr)">0 steps</div>
+</div>
+
+<!-- Done overlay -->
+<div class="done-overlay" id="done-overlay">
+  <div class="done-card">
+    <div class="done-icon">✅</div>
+    <div class="done-title" id="done-title">Session สมบูรณ์!</div>
+    <p class="done-txt" id="done-txt">—</p>
+    <div class="done-btns">
+      <button class="btn-ctrl export" id="btn-dl-excel">⬇ Excel</button>
+      <button class="btn-ctrl skip"   id="btn-dl-csv">⬇ CSV</button>
+      <button class="btn-ctrl play"   id="btn-new" style="background:var(--green)">+ บันทึกใหม่</button>
+    </div>
+    <div style="margin-top:12px">
+      <a href="sessions.html" style="font-size:12px;color:var(--bfg);text-decoration:none">🗂 ดูประวัติทั้งหมด →</a>
+    </div>
+  </div>
+</div>
+
+<script src="data/protocol.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/api.js"></script>
+<script src="js/export.js"></script>
+<script src="js/session.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // โหลดข้อมูลจาก sessionStorage
+  const raw = sessionStorage.getItem('cva_info');
+  if (!raw) { window.location.href = 'index.html'; return; }
+  const info = JSON.parse(raw);
+
+  // Setup ring
+  document.getElementById('ring-arc').style.strokeDasharray = RING_C;
+
+  // Header
+  document.getElementById('h-sess').textContent = info.sessId;
+  document.getElementById('h-name').textContent = `${info.pid} · ${info.name}`;
+
+  // Request notification permission
+  await requestNotifPermission();
+
+  // Wire buttons
+  document.getElementById('btn-pause').addEventListener('click', handlePause);
+  document.getElementById('btn-skip').addEventListener('click', handleSkip);
+  document.getElementById('btn-stop').addEventListener('click', handleStop);
+  document.getElementById('btn-log').addEventListener('click', () =>
+    document.getElementById('log-drawer').style.transform =
+      document.getElementById('log-drawer').style.transform === 'translateX(0px)' ? '' : 'translateX(0px)');
+  document.getElementById('btn-close-log').addEventListener('click', () =>
+    document.getElementById('log-drawer').style.transform = '');
+  document.getElementById('btn-csv').addEventListener('click', () =>
+    doExportCSV(S.log, { ...S.info, startTime: S._startTime }));
+  document.getElementById('btn-dl-csv').addEventListener('click', () =>
+    doExportCSV(S.log, { ...S.info, startTime: S._startTime }));
+  document.getElementById('btn-new').addEventListener('click', () =>
+    window.location.href = 'index.html');
+
+  // Start
+  ensureAudio();
+  startSession(info);
+
+  // Update log drawer & progress bar on each step
+  const origRenderDots = renderDots;
+  window.renderDots = function() {
+    origRenderDots();
+    const pct = S.stepIdx / PROTOCOL.length * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    // Update log
+    const body   = document.getElementById('log-body');
+    const footer = document.getElementById('log-footer');
+    if (!S.log.length) {
+      body.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:16px">ยังไม่มีข้อมูล</div>';
+      footer.textContent = '0 steps'; return;
+    }
+    body.innerHTML = [...S.log].reverse().map(e =>
+      `<div style="display:grid;grid-template-columns:1fr auto;gap:4px;padding:5px 7px;border-bottom:0.5px solid var(--bdr)">
+        <span style="font-size:11px;color:var(--tx)">${e.label}</span>
+        <span style="font-size:10px;font-family:monospace;color:var(--tx3)">${(e.durationMs/1000).toFixed(0)}s</span>
+      </div>`).join('');
+    footer.textContent = `${S.log.length} steps`;
+  };
+});
+</script>
+</body>
+</html>

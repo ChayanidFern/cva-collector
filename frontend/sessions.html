@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ประวัติ — CVA Collector</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<style>
+body{overflow:auto;padding:28px 20px}
+.page{max-width:860px;margin:0 auto}
+.page-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--tx2);margin-bottom:20px}
+.back{font-size:12px;color:var(--bfg);text-decoration:none;display:inline-block;margin-bottom:16px}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.badge{font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--bdr);border-radius:4px;padding:2px 8px;color:var(--tx2)}
+.status-ok{font-size:11px;color:var(--gfg)}
+.status-err{font-size:11px;color:var(--rfg)}
+table{width:100%;border-collapse:collapse;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;font-size:13px}
+th{background:var(--bg3);font-size:11px;font-weight:600;color:var(--tx2);padding:9px 12px;text-align:left;border-bottom:1px solid var(--bdr)}
+td{padding:9px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.mono{font-family:var(--mono);font-size:11px;color:var(--tx2)}
+.btn-dl{padding:5px 14px;border-radius:6px;border:none;background:var(--green);color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+.btn-del{padding:5px 10px;border-radius:6px;border:1px solid var(--bdr);background:transparent;color:var(--rfg);font-size:12px;cursor:pointer}
+.empty{text-align:center;padding:36px;color:var(--tx3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="index.html" class="back">← กลับหน้าหลัก</a>
+  <div class="page-title">🗂 ประวัติการบันทึก</div>
+  <div class="page-sub">ข้อมูลทุกการบันทึกสะสมใน all_sessions.xlsx — ดาวน์โหลดได้ที่นี่</div>
+
+  <div class="toolbar">
+    <span id="api-status" class="status-ok">⏳ ตรวจสอบ...</span>
+    <span class="badge" id="count-badge">0 รายการ</span>
+    <button class="btn-ctrl export" style="margin-left:auto;padding:7px 16px;font-size:12px" onclick="dlAll()">⬇ ดาวน์โหลด Excel ทั้งหมด</button>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th>รหัส Participant</th>
+      <th>ชื่อ-นามสกุล</th>
+      <th>ผู้วิจัย</th>
+      <th>ขนาด</th>
+      <th>บันทึกเมื่อ</th>
+      <th></th>
+      <th></th>
+    </tr></thead>
+    <tbody id="tbl-body"><tr><td colspan="7" class="empty">⏳ กำลังโหลด...</td></tr></tbody>
+  </table>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+async function load() {
+  const ok = await apiHealthCheck();
+  const el = document.getElementById('api-status');
+  el.textContent = ok ? '✅ Backend Online' : '❌ Backend Offline';
+  el.className   = ok ? 'status-ok' : 'status-err';
+  if (!ok) {
+    document.getElementById('tbl-body').innerHTML = `<tr><td colspan="7" class="empty">ไม่สามารถเชื่อมต่อ Backend ได้</td></tr>`;
+    return;
+  }
+  try {
+    const data = await apiListSessions();
+    document.getElementById('count-badge').textContent = `${data.count} รายการ`;
+    if (!data.sessions.length) {
+      document.getElementById('tbl-body').innerHTML = `<tr><td colspan="7" class="empty">ยังไม่มีข้อมูล — เริ่มบันทึกแรกได้เลย</td></tr>`;
+      return;
+    }
+    // ดึงข้อมูลจาก Excel summary sheet ถ้ามี
+    // ตอนนี้แสดงจาก sessions list ก่อน
+    const summary = data.summary || {};
+    // แสดงเป็น 1 แถวต่อ 1 participant จาก summary
+    const pids = Object.keys(summary);
+    if (pids.length > 0) {
+      document.getElementById('tbl-body').innerHTML = pids.map(pid => {
+        const m = summary[pid];
+        return `<tr>
+          <td>${pid}</td>
+          <td>${m.name || '—'}</td>
+          <td>${m.rater || '—'}</td>
+          <td class="mono">—</td>
+          <td class="mono">—</td>
+          <td><button class="btn-dl" onclick="apiDownloadExcel('all_sessions.xlsx')">⬇ ดาวน์โหลด</button></td>
+          <td></td>
+        </tr>`;
+      }).join('');
+    } else {
+      document.getElementById('tbl-body').innerHTML = data.sessions.map(s => `<tr>
+        <td class="mono">—</td>
+        <td>—</td>
+        <td>—</td>
+        <td class="mono">${s.size_kb} KB</td>
+        <td class="mono">${s.created}</td>
+        <td><button class="btn-dl" onclick="apiDownloadExcel('${s.filename}')">⬇ ดาวน์โหลด</button></td>
+        <td><button class="btn-del" onclick="del('${s.filename}')">ลบ</button></td>
+      </tr>`).join('');
+    }
+  } catch(e) {
+    document.getElementById('tbl-body').innerHTML = `<tr><td colspan="7" class="empty">❌ ${e.message}</td></tr>`;
+  }
+}
+async function dlAll() {
+  try { await apiDownloadExcel('all_sessions.xlsx'); }
+  catch { alert('ยังไม่มีข้อมูล'); }
+}
+async function del(f) {
+  if (!confirm(`ลบไฟล์นี้?\n${f}`)) return;
+  try { await apiDeleteSession(f); load(); } catch(e) { alert(e.message); }
+}
+load();
+</script>
+</body>
+</html>
